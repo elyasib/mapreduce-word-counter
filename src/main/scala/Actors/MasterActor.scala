@@ -6,27 +6,20 @@ import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
 
 
 class MasterActor extends Actor with ActorLogging {
-  var mapMsgCounter = 0
-  var reduceMsgCounter = 0
-  val mapRouter = {
+  private[this] var mapMsgCounter = 0
+  private[this] var reduceMsgCounter = 0
+  private[this] val mapRouter = createRouter(Props[MapActor])
+  private[this] val reduceRouter = createRouter(Props[ReduceActor])
+  private[this] val aggregator = context.actorOf(Props[AggregatorActor].withDispatcher("priority-dispatcher"), name = "aggregate")
+
+  def createRouter(props : Props) = {
     val routees = Vector.fill(5) {
-      val r = context.actorOf(Props[MapActor].withDispatcher("priority-dispatcher"))
+      val r = context.actorOf(props.withDispatcher("priority-dispatcher"))
       context watch r
       ActorRefRoutee(r)
     }
     Router(RoundRobinRoutingLogic(), routees)
   }
-
-  val reduceRouter = {
-    val routees = Vector.fill(5) {
-      val r = context.actorOf(Props[ReduceActor].withDispatcher("priority-dispatcher"))
-      context watch r
-      ActorRefRoutee(r)
-    }
-    Router(RoundRobinRoutingLogic(), routees)
-  }
-
-  val aggregator = context.actorOf(Props[AggregatorActor].withDispatcher("priority-dispatcher"), name = "aggregate")
   
   def receive : Receive = {
     case line : String => {

@@ -5,10 +5,8 @@ import simpleMapReduce.Messages._
 import akka.actor.{Actor, Props, ActorLogging}
 
 class AggregatorActor extends Actor with ActorLogging { 
-  //import AggregatorActor._
 
-  //private[this] val result = HashMap[String, Int]()
-  val result = HashMap[String, Int]()
+  private[this] val result = HashMap[String, Int]()
   def receive : Receive = {
     case ReducedData(reducedData) => aggregate(reducedData)
     case Result => sender ! toString(result)
@@ -24,10 +22,10 @@ class AggregatorActor extends Actor with ActorLogging {
         val (word, count) = elem
         if(result contains word) {
           result(word) = result(word) + count
+          result
         } else {
           result += (word -> count)
         }
-        result
       }
     }
   }
